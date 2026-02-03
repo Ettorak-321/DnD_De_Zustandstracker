@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Zustandstracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+                font-size: 16px;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            header {
+                padding: 30px;
+            }
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        @media (min-width: 768px) {
+            h1 {
+                font-size: 2.5em;
+            }
+        }
+
+        .subtitle {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        @media (min-width: 768px) {
+            .subtitle {
+                font-size: 1.1em;
+            }
+        }
+
+        .controls {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        @media (min-width: 768px) {
+            .controls {
+                padding: 25px;
+            }
+        }
+
+        .character-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        @media (min-width: 768px) {
+            .character-input {
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+        }
+
+        input[type="text"], input[type="number"] {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        @media (min-width: 768px) {
+            input[type="text"], input[type="number"] {
+                padding: 12px 15px;
+                font-size: 16px;
+            }
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        @media (min-width: 768px) {
+            button {
+                padding: 12px 25px;
+                font-size: 16px;
+            }
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .export-import-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            background: #27ae60;
+        }
+
+        .export-btn:hover {
+            background: #229954;
+        }
+
+        .import-btn {
+            background: #3498db;
+        }
+
+        .import-btn:hover {
+            background: #2980b9;
+        }
+
+        .characters-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .characters-grid {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 20px;
+                padding: 25px;
+            }
+        }
+
+        .character-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        @media (min-width: 768px) {
+            .character-card {
+                padding: 20px;
+            }
+        }
+
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .character-card.dying {
+            border-color: #e74c3c;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .character-card.dead {
+            border-color: #95a5a6;
+            opacity: 0.7;
+            background: #ecf0f1;
+        }
+
+        .character-header {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .character-image-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .character-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .character-image-container:hover::after {
+            content: '📷';
+            position: absolute;
+            font-size: 24px;
+            background: rgba(0,0,0,0.5);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .character-info {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .character-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            word-break: break-word;
+        }
+
+        @media (min-width: 768px) {
+            .character-name {
+                font-size: 1.5em;
+            }
+        }
+
+        .delete-btn {
+            padding: 6px 12px;
+            background: #e74c3c;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 768px) {
+            .delete-btn {
+                font-size: 14px;
+            }
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .conditions-list, .resistances-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .conditions-list, .resistances-list {
+                gap: 8px;
+            }
+        }
+
+        .condition-badge {
+            padding: 6px 10px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        @media (min-width: 768px) {
+            .condition-badge {
+                padding: 8px 12px;
+                font-size: 14px;
+                gap: 8px;
+            }
+        }
+
+        .condition-badge:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .resistance-badge {
+            padding: 6px 10px;
+            background: #3498db;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        @media (min-width: 768px) {
+            .resistance-badge {
+                padding: 8px 12px;
+                font-size: 14px;
+                gap: 8px;
+            }
+        }
+
+        .resistance-badge:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .resistance-badge.immunity {
+            background: #9b59b6;
+        }
+
+        .resistance-badge.immunity:hover {
+            background: #8e44ad;
+        }
+
+        .remove-badge {
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        @media (min-width: 768px) {
+            .remove-badge {
+                width: 18px;
+                height: 18px;
+                font-size: 12px;
+            }
+        }
+
+        .toggle-section-btn {
+            padding: 10px 15px;
+            background: #34495e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+        }
+
+        @media (min-width: 768px) {
+            .toggle-section-btn {
+                font-size: 15px;
+                margin-bottom: 15px;
+            }
+        }
+
+        .toggle-section-btn:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 73, 94, 0.4);
+        }
+
+        .toggle-section-btn.active {
+            background: #27ae60;
+        }
+
+        .toggle-section-btn.active:hover {
+            background: #229954;
+        }
+
+        .section-content {
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .section-content.visible {
+            display: block;
+        }
+
+        .health-tracker {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 2px solid #dee2e6;
+        }
+
+        @media (min-width: 768px) {
+            .health-tracker {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+        }
+
+        .health-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .health-label {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 80px;
+            font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+            .health-label {
+                min-width: 100px;
+                font-size: 14px;
+            }
+        }
+
+        .health-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #27ae60;
+            min-width: 80px;
+        }
+
+        @media (min-width: 768px) {
+            .health-display {
+                font-size: 24px;
+                min-width: 100px;
+            }
+        }
+
+        .health-display.warning {
+            color: #f39c12;
+        }
+
+        .health-display.danger {
+            color: #e74c3c;
+        }
+
+        .health-display.dead {
+            color: #95a5a6;
+        }
+
+        .health-input {
+            padding: 8px 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 70px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .health-input {
+                width: 80px;
+                font-size: 16px;
+            }
+        }
+
+        .health-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+            .health-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        .health-btn.heal {
+            background: #27ae60;
+        }
+
+        .health-btn.heal:hover {
+            background: #229954;
+        }
+
+        .health-btn.damage {
+            background: #e74c3c;
+        }
+
+        .health-btn.damage:hover {
+            background: #c0392b;
+        }
+
+        .health-btn.set {
+            background: #3498db;
+        }
+
+        .health-btn.set:hover {
+            background: #2980b9;
+        }
+
+        .temp-hp {
+            background: #e3f2fd;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            border: 2px solid #2196f3;
+            font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+            .temp-hp {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+
+        .hp-history-btn {
+            background: #95a5a6;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+
+        @media (min-width: 768px) {
+            .hp-history-btn {
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+        }
+
+        .hp-history-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .hp-history {
+            background: #fff;
+            border: 2px solid #95a5a6;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .hp-history {
+                font-size: 13px;
+            }
+        }
+
+        .hp-history-entry {
+            padding: 5px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hp-history-entry:last-child {
+            border-bottom: none;
+        }
+
+        .hp-history-undo {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .exhaustion-tracker {
+            background: #fff9e6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 2px solid #f39c12;
+        }
+
+        @media (min-width: 768px) {
+            .exhaustion-tracker {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+        }
+
+        .exhaustion-levels {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (min-width: 768px) {
+            .exhaustion-levels {
+                gap: 8px;
+            }
+        }
+
+        .exhaustion-level {
+            width: 35px;
+            height: 35px;
+            border: 2px solid #f39c12;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .exhaustion-level {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+
+        .exhaustion-level:hover {
+            transform: scale(1.1);
+        }
+
+        .exhaustion-level.active {
+            background: #f39c12;
+            color: white;
+        }
+
+        .exhaustion-level.death {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+        }
+
+        .exhaustion-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        @media (min-width: 768px) {
+            .exhaustion-info {
+                font-size: 13px;
+            }
+        }
+
+        .concentration-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #856404;
+            animation: pulse 2s infinite;
+        }
+
+        @media (min-width: 768px) {
+            .concentration-warning {
+                font-size: 13px;
+                padding: 10px 15px;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .concentration-warning-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .rest-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .rest-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 12px;
+            font-size: 12px;
+            background: #16a085;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        @media (min-width: 768px) {
+            .rest-btn {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+        }
+
+        .rest-btn:hover {
+            background: #138d75;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(22, 160, 133, 0.4);
+        }
+
+        .rest-btn.long-rest {
+            background: #8e44ad;
+        }
+
+        .rest-btn.long-rest:hover {
+            background: #7d3c98;
+            box-shadow: 0 4px 12px rgba(142, 68, 173, 0.4);
+        }
+
+        .global-rest-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .global-rest-btn {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .death-saves {
+            background: #ffe6e6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 2px solid #e74c3c;
+        }
+
+        @media (min-width: 768px) {
+            .death-saves {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+        }
+
+        .death-saves h4 {
+            color: #e74c3c;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .death-saves h4 {
+                margin-bottom: 10px;
+                font-size: 16px;
+            }
+        }
+
+        .death-saves p {
+            font-size: 11px;
+            margin-bottom: 8px;
+            color: #721c24;
+        }
+
+        @media (min-width: 768px) {
+            .death-saves p {
+                font-size: 13px;
+                margin-bottom: 10px;
+            }
+        }
+
+        .saves-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (min-width: 768px) {
+            .saves-row {
+                gap: 20px;
+            }
+        }
+
+        .saves-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .saves-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-size: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .saves-group label {
+                font-size: 14px;
+            }
+        }
+
+        .save-boxes {
+            display: flex;
+            gap: 6px;
+        }
+
+        @media (min-width: 768px) {
+            .save-boxes {
+                gap: 8px;
+            }
+        }
+
+        .save-box {
+            width: 28px;
+            height: 28px;
+            border: 2px solid #95a5a6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        @media (min-width: 768px) {
+            .save-box {
+                width: 30px;
+                height: 30px;
+            }
+        }
+
+        .save-box:hover {
+            transform: scale(1.1);
+        }
+
+        .save-box.success {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+
+        .save-box.failure {
+            background: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .death-saves-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stabilize-btn, .reset-saves-btn {
+            padding: 8px 14px;
+            font-size: 12px;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        @media (min-width: 768px) {
+            .stabilize-btn, .reset-saves-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        .stabilize-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .stabilize-btn:hover {
+            background: #229954;
+        }
+
+        .reset-saves-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .reset-saves-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .condition-buttons {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 2px solid #e9ecef;
+        }
+
+        @media (min-width: 768px) {
+            .condition-buttons {
+                margin-top: 15px;
+                padding-top: 15px;
+            }
+        }
+
+        .condition-buttons h4 {
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+            .condition-buttons h4 {
+                margin-bottom: 10px;
+                font-size: 14px;
+            }
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 6px;
+        }
+
+        @media (min-width: 768px) {
+            .buttons-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 8px;
+            }
+        }
+
+        .condition-btn {
+            padding: 8px 10px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .condition-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+
+        .condition-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .condition-btn.active {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+
+        .condition-btn.active:hover {
+            background: #229954;
+            border-color: #229954;
+        }
+
+        .resistance-selector {
+            margin-top: 10px;
+        }
+
+        .resistance-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .resistance-item {
+                font-size: 13px;
+                gap: 10px;
+                padding: 10px;
+            }
+        }
+
+        .resistance-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .resistance-toggle {
+            display: flex;
+            gap: 4px;
+        }
+
+        .resistance-toggle button {
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 2px solid #bdc3c7;
+        }
+
+        @media (min-width: 768px) {
+            .resistance-toggle button {
+                padding: 5px 12px;
+                font-size: 12px;
+            }
+        }
+
+        .resistance-toggle button.selected {
+            background: #2980b9;
+            color: white;
+            border-color: #2980b9;
+            font-weight: 700;
+            transform: none;
+        }
+
+        .resistance-toggle button.selected.immunity {
+            background: #8e44ad;
+            border-color: #8e44ad;
+        }
+
+        .condition-description {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .condition-description {
+                margin-top: 20px;
+                padding: 20px;
+                font-size: 13px;
+            }
+        }
+
+        .condition-description h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .condition-description h4 {
+                margin-bottom: 10px;
+                font-size: 16px;
+            }
+        }
+
+        .condition-description p {
+            color: #495057;
+            line-height: 1.8;
+            margin-bottom: 8px;
+            white-space: pre-line;
+        }
+
+        .condition-description strong {
+            color: #667eea;
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        @media (min-width: 768px) {
+            .condition-description strong {
+                margin-top: 12px;
+                margin-bottom: 6px;
+                font-size: 15px;
+            }
+        }
+
+        .no-conditions-selected {
+            color: #95a5a6;
+            font-style: italic;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        @media (min-width: 768px) {
+            .empty-state {
+                padding: 60px 20px;
+            }
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .empty-state-icon {
+                font-size: 4em;
+                margin-bottom: 20px;
+            }
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ D&D Zustandstracker ⚔️</h1>
+            <p class="subtitle">Verwalte Zustände, Gesundheit und Resistenzen deiner Charaktere</p>
+        </header>
+
+        <div class="controls">
+            <div class="character-input">
+                <input type="text" id="characterName" placeholder="Charaktername eingeben..." />
+                <button onclick="addCharacter()">Charakter hinzufügen</button>
+            </div>
+            <div class="export-import-btns">
+                <button class="export-btn" onclick="exportData()">📥 Exportieren</button>
+                <button class="import-btn" onclick="openImportModal()">📤 Importieren</button>
+            </div>
+            <div class="global-rest-buttons">
+                <button class="rest-btn global-rest-btn" onclick="shortRestAll()">☕ Kurze Rast (Alle)</button>
+                <button class="rest-btn long-rest global-rest-btn" onclick="longRestAll()">🛏️ Lange Rast (Alle)</button>
+            </div>
+        </div>
+
+        <div id="charactersContainer" class="characters-grid">
+            <div class="empty-state">
+                <div class="empty-state-icon">🎲</div>
+                <h3>Noch keine Charaktere</h3>
+                <p>Füge deinen ersten Charakter hinzu, um zu beginnen!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // D&D 5E SRD-compliant conditions
+        const conditions = [
+            { 
+                name: "Betäubt", 
+                desc: `<strong>Effekte:</strong>
+• Kampfunfähig (keine Aktionen/Reaktionen)
+• Kann sich nicht bewegen oder sprechen
+• Keine Wahrnehmung der Umgebung
+• Lässt alle gehaltenen Gegenstände fallen
+• Fällt zu Boden
+• Angriffe gegen dich: Vorteil
+• Treffer im Nahkampf (5 Fuß): Automatisch kritisch
+
+<strong>Beenden:</strong> Endet, wenn die Ursache entfernt wird (z.B. Zauber endet, Schaden heilt)` 
+            },
+            { 
+                name: "Bewusstlos", 
+                desc: `<strong>Effekte:</strong>
+• Kampfunfähig (keine Aktionen/Reaktionen)
+• Kann sich nicht bewegen oder sprechen
+• Keine Wahrnehmung der Umgebung
+• Lässt alle gehaltenen Gegenstände fallen
+• Fällt zu Boden (wird automatisch "Liegend")
+• Automatisches Versagen bei STR- und GES-Rettungswürfen
+• Angriffe gegen dich: Vorteil
+• Treffer im Nahkampf (5 Fuß): Automatisch kritisch
+
+<strong>Beenden:</strong> Schaden erleiden, Aktion eines Verbündeten (Aufwecken), Zauber endet` 
+            },
+            { 
+                name: "Blind", 
+                desc: `<strong>Effekte:</strong>
+• Automatisches Versagen bei Attributswürfen, die Sicht erfordern
+• Angriffe gegen dich: Vorteil
+• Deine Angriffe: Nachteil
+
+<strong>Beenden:</strong> Zauber/Effekt endet, Heilmagie, Lesser/Greater Restoration` 
+            },
+            { 
+                name: "Bezaubert", 
+                desc: `<strong>Effekte:</strong>
+• Kannst den Verzauberer nicht angreifen
+• Kannst den Verzauberer nicht als Ziel schädlicher Fähigkeiten/Zauber wählen
+• Verzauberer hat Vorteil bei allen sozialen Interaktionen mit dir
+
+<strong>Beenden:</strong> Zauber endet, Rettungswurf am Ende jedes Zuges (wenn Zauber erlaubt), Schaden vom Verzauberer` 
+            },
+            { 
+                name: "Erschöpfung", 
+                desc: `<strong>Stufe 1:</strong> Nachteil auf Attributswürfe
+<strong>Stufe 2:</strong> Bewegungsrate halbiert
+<strong>Stufe 3:</strong> Nachteil auf Angriffs- und Rettungswürfe
+<strong>Stufe 4:</strong> TP-Maximum halbiert
+<strong>Stufe 5:</strong> Bewegungsrate = 0
+<strong>Stufe 6:</strong> Tod
+
+<strong>Reduzieren:</strong>
+• Lange Rast: -1 Stufe (min. Nahrung & Wasser erforderlich)
+• Greater Restoration: -1 Stufe sofort` 
+            },
+            { 
+                name: "Gelähmt", 
+                desc: `<strong>Effekte:</strong>
+• Kampfunfähig (keine Aktionen/Reaktionen)
+• Kann sich nicht bewegen oder sprechen
+• Automatisches Versagen bei STR- und GES-Rettungswürfen
+• Angriffe gegen dich: Vorteil
+• Treffer im Nahkampf (5 Fuß): Automatisch kritisch
+
+<strong>Beenden:</strong> Zauber endet, Lesser/Greater Restoration, Rettungswurf (wenn erlaubt)` 
+            },
+            { 
+                name: "Kampfunfähig", 
+                desc: `<strong>Effekte:</strong>
+• Keine Aktionen möglich
+• Keine Reaktionen möglich
+
+<strong>Beenden:</strong> Automatisch wenn zugrundeliegender Zustand endet (z.B. Betäubt, Gelähmt, etc.)` 
+            },
+            { 
+                name: "Liegend", 
+                desc: `<strong>Effekte:</strong>
+• Kriechen: 1 Fuß kostet 2 Fuß Bewegung
+• Deine Angriffe: Nachteil
+• Angriffe gegen dich im Nahkampf (5 Fuß): Vorteil
+• Angriffe gegen dich aus Entfernung: Nachteil
+
+<strong>Beenden:</strong> Aufstehen kostet halbe Bewegungsrate (Minimum 5 Fuß)
+• Bewegungsrate = 0: Kann nicht aufstehen` 
+            },
+            { 
+                name: "Taub", 
+                desc: `<strong>Effekte:</strong>
+• Automatisches Versagen bei Attributswürfen, die Hören erfordern
+
+<strong>Beenden:</strong> Zauber endet, Lesser/Greater Restoration` 
+            },
+            { 
+                name: "Unsichtbar", 
+                desc: `<strong>Effekte:</strong>
+• Nicht sichtbar ohne Magie/spezielle Sinne
+• Gilt als "stark verschleiert" beim Verstecken
+• Position kann durch Geräusche/Spuren erkannt werden
+• Angriffe gegen dich: Nachteil
+• Deine Angriffe: Vorteil
+
+<strong>Beenden:</strong> Zauber endet, bei Angriff (bei vielen Zaubern), Konzentration verlieren` 
+            },
+            { 
+                name: "Vergiftet", 
+                desc: `<strong>Effekte:</strong>
+• Nachteil auf Angriffswürfe
+• Nachteil auf Attributswürfe
+
+<strong>Beenden:</strong>
+• Lesser Restoration (sofort)
+• Rettungswurf am Ende jedes Zuges (wenn Gift erlaubt)
+• Nach Giftdauer (typisch 1 Minute bis mehrere Stunden)` 
+            },
+            { 
+                name: "Verlangsamt", 
+                desc: `<strong>Effekte:</strong>
+• Bewegungsrate halbiert
+• Rüstungsklasse (AC): -2 Malus
+• Geschicklichkeitsrettungswürfe: -2 Malus
+• Kann keine Reaktionen ausführen
+
+<strong>Beenden:</strong> Zauber endet, Effekt wird entfernt` 
+            },
+            { 
+                name: "Versteinert", 
+                desc: `<strong>Effekte:</strong>
+• In Stein verwandelt (mit Ausrüstung)
+• Gewicht × 10
+• Keine Alterung
+• Kampfunfähig, keine Bewegung/Sprache/Wahrnehmung
+• Automatisches Versagen bei STR- und GES-Rettungswürfen
+• Angriffe gegen dich: Vorteil
+• Widerstand gegen allen Schaden
+• Immun gegen Gift und Krankheiten
+
+<strong>Beenden:</strong> Greater Restoration, spezielle Magie (z.B. Basiliskenblut)` 
+            },
+            { 
+                name: "Verängstigt", 
+                desc: `<strong>Effekte (nur wenn Quelle sichtbar):</strong>
+• Nachteil auf Attributswürfe
+• Nachteil auf Angriffswürfe
+• Kann sich nicht freiwillig näher zur Quelle bewegen
+
+<strong>Beenden:</strong>
+• Quelle außer Sicht
+• Rettungswurf am Ende jedes Zuges (wenn Effekt erlaubt)
+• Zauber endet
+• Calm Emotions Zauber` 
+            },
+            { 
+                name: "Festgehalten", 
+                desc: `<strong>Effekte:</strong>
+• Bewegungsrate = 0
+• Keine Boni auf Bewegungsrate
+• Angriffe gegen dich: Vorteil
+• Deine Angriffe: Nachteil
+• Nachteil auf GES-Rettungswürfe
+
+<strong>Beenden:</strong>
+• Entkommen: Aktion + STR/GES-Wurf gegen SG des Effekts
+• Greifer kampfunfähig machen
+• Effekt wird beendet (Zauber endet)` 
+            },
+            { 
+                name: "Konzentration", 
+                desc: `<strong>Effekte:</strong>
+• Zauber bleibt aktiv
+• Nur ein Konzentrationszauber gleichzeitig
+
+<strong>Verlieren durch:</strong>
+• Anderen Konzentrationszauber wirken
+• Schaden erleiden: KON-Rettungswurf SG 10 oder Hälfte des Schadens (je höher)
+• Kampfunfähig oder Tod
+• Vom Spielleiter bestimmte Umwelteffekte
+
+<strong>Dauer:</strong> Bis zu 1 Stunde (zauberabhängig)` 
+            },
+            { 
+                name: "Gesegnet", 
+                desc: `<strong>Effekte:</strong>
+• Bei Angriffs- oder Rettungswürfen: +1W4 zum Wurf
+
+<strong>Dauer:</strong> 1 Minute (10 Runden)
+<strong>Erfordert:</strong> Konzentration des Zauberwirkers
+
+<strong>Beenden:</strong> Zauber endet, Konzentration verloren` 
+            },
+            { 
+                name: "Verhext", 
+                desc: `<strong>Effekte:</strong>
+• Bei Angriffs- oder Rettungswürfen: -1W4 vom Wurf
+
+<strong>Dauer:</strong> 1 Minute (10 Runden)
+<strong>Erfordert:</strong> Konzentration des Zauberwirkers
+
+<strong>Beenden:</strong> Zauber endet, Konzentration verloren, Remove Curse` 
+            }
+        ];
+
+        // D&D 5E damage types
+        const damageTypes = [
+            'Säure', 'Wuchtschaden', 'Kälte', 'Feuer', 'Energie', 
+            'Blitz', 'Nekrotisch', 'Gift', 'Psychisch', 'Strahlung', 
+            'Hiebschaden', 'Stichschaden', 'Donner'
+        ];
+
+        let characters = JSON.parse(localStorage.getItem('dndCharacters')) || [];
+
+        // Migration for old data
+        characters = characters.map(char => {
+            if (!char.hp) char.hp = { current: 20, max: 20, temp: 0 };
+            if (!char.exhaustion && char.exhaustion !== 0) char.exhaustion = 0;
+            if (!char.deathSaves) char.deathSaves = { successes: 0, failures: 0 };
+            if (!char.stable) char.stable = false;
+            if (!char.conditions) char.conditions = [];
+            if (!char.resistances) char.resistances = {};
+            if (!char.showHealth) char.showHealth = false;
+            if (!char.showResistances) char.showResistances = false;
+            if (!char.image) char.image = null;
+            if (!char.hpHistory) char.hpHistory = [];
+            if (!char.showHPHistory) char.showHPHistory = false;
+            return char;
+        });
+
+        function saveToLocalStorage() {
+            localStorage.setItem('dndCharacters', JSON.stringify(characters));
+        }
+
+        function addCharacter() {
+            const input = document.getElementById('characterName');
+            const name = input.value.trim();
+            
+            if (name === '') {
+                alert('Bitte gib einen Namen ein!');
+                return;
+            }
+
+            characters.push({
+                id: Date.now(),
+                name: name,
+                conditions: [],
+                resistances: {},
+                showResistances: false,
+                showHealth: false,
+                hp: { current: 20, max: 20, temp: 0 },
+                exhaustion: 0,
+                deathSaves: { successes: 0, failures: 0 },
+                stable: false,
+                image: null,
+                hpHistory: [],
+                showHPHistory: false
+            });
+
+            input.value = '';
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function deleteCharacter(id) {
+            if (confirm('Möchtest du diesen Charakter wirklich löschen?')) {
+                characters = characters.filter(c => c.id !== id);
+                saveToLocalStorage();
+                renderCharacters();
+            }
+        }
+
+        function toggleCondition(characterId, conditionName) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            if (character.conditions.includes(conditionName)) {
+                character.conditions = character.conditions.filter(c => c !== conditionName);
+            } else {
+                character.conditions.push(conditionName);
+            }
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function toggleHealthSection(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            character.showHealth = !character.showHealth;
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function toggleResistancesSection(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            character.showResistances = !character.showResistances;
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function getEffectiveMaxHP(character) {
+            // Exhaustion level 4 halves HP maximum
+            if (character.exhaustion >= 4) {
+                return Math.floor(character.hp.max / 2);
+            }
+            return character.hp.max;
+        }
+
+        function setMaxHP(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            const input = document.getElementById(`maxhp-${characterId}`);
+            const value = parseInt(input.value) || 0;
+            
+            if (value < 0) {
+                alert('Max HP kann nicht negativ sein!');
+                return;
+            }
+
+            character.hp.max = value;
+            
+            // Enforce effective max HP based on exhaustion
+            const effectiveMax = getEffectiveMaxHP(character);
+            if (character.hp.current > effectiveMax) {
+                character.hp.current = effectiveMax;
+            }
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function addToHPHistory(character, change, reason) {
+            const timestamp = new Date().toLocaleString('de-DE');
+            character.hpHistory.unshift({
+                timestamp,
+                change,
+                reason,
+                currentHP: character.hp.current,
+                maxHP: character.hp.max,
+                tempHP: character.hp.temp
+            });
+            // Keep only last 20 entries
+            if (character.hpHistory.length > 20) {
+                character.hpHistory = character.hpHistory.slice(0, 20);
+            }
+        }
+
+        function healCharacter(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            const input = document.getElementById(`heal-${characterId}`);
+            const value = parseInt(input.value) || 0;
+            
+            const oldHP = character.hp.current;
+            const effectiveMax = getEffectiveMaxHP(character);
+            character.hp.current = Math.min(character.hp.current + value, effectiveMax);
+            
+            addToHPHistory(character, `+${value}`, 'Heilung');
+            
+            // Reset death saves if healing from 0 HP
+            if (oldHP === 0 && character.hp.current > 0) {
+                character.deathSaves = { successes: 0, failures: 0 };
+                character.stable = false;
+                character.conditions = character.conditions.filter(c => c !== 'Bewusstlos');
+            }
+            
+            input.value = '';
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function shortRest(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            // Short rest allows spending hit dice to heal (we'll just note it happened)
+            // No automatic HP gain, player decides if they spend hit dice
+            addToHPHistory(character, `0`, 'Kurze Rast (Trefferwürfel verfügbar)');
+            
+            alert(`${character.name} hat eine kurze Rast gemacht. Trefferwürfel können ausgegeben werden.`);
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function longRest(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            // Long rest: restore all HP, reduce exhaustion by 1
+            const oldHP = character.hp.current;
+            const effectiveMax = getEffectiveMaxHP(character);
+            character.hp.current = effectiveMax;
+            
+            if (oldHP < effectiveMax) {
+                addToHPHistory(character, `+${effectiveMax - oldHP}`, 'Lange Rast (vollständig geheilt)');
+            }
+            
+            // Reduce exhaustion by 1
+            if (character.exhaustion > 0) {
+                const oldExhaustion = character.exhaustion;
+                character.exhaustion = Math.max(0, character.exhaustion - 1);
+                
+                // Update condition
+                if (character.exhaustion === 0) {
+                    character.conditions = character.conditions.filter(c => c !== 'Erschöpfung');
+                }
+                
+                addToHPHistory(character, `0`, `Lange Rast (Erschöpfung ${oldExhaustion} → ${character.exhaustion})`);
+            }
+            
+            // Reset death saves and stable status
+            if (character.hp.current > 0) {
+                character.deathSaves = { successes: 0, failures: 0 };
+                character.stable = false;
+                character.conditions = character.conditions.filter(c => c !== 'Bewusstlos');
+            }
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function shortRestAll() {
+            if (characters.length === 0) {
+                alert('Keine Charaktere vorhanden!');
+                return;
+            }
+            
+            if (confirm('Kurze Rast für alle Charaktere?')) {
+                characters.forEach(char => {
+                    addToHPHistory(char, `0`, 'Kurze Rast (Trefferwürfel verfügbar)');
+                });
+                
+                saveToLocalStorage();
+                renderCharacters();
+                alert('Alle Charaktere haben eine kurze Rast gemacht!');
+            }
+        }
+
+        function longRestAll() {
+            if (characters.length === 0) {
+                alert('Keine Charaktere vorhanden!');
+                return;
+            }
+            
+            if (confirm('Lange Rast für alle Charaktere? (Heilt alle HP, reduziert Erschöpfung um 1)')) {
+                characters.forEach(char => {
+                    // Restore all HP
+                    const oldHP = char.hp.current;
+                    const effectiveMax = getEffectiveMaxHP(char);
+                    char.hp.current = effectiveMax;
+                    
+                    if (oldHP < effectiveMax) {
+                        addToHPHistory(char, `+${effectiveMax - oldHP}`, 'Lange Rast (vollständig geheilt)');
+                    }
+                    
+                    // Reduce exhaustion
+                    if (char.exhaustion > 0) {
+                        const oldExhaustion = char.exhaustion;
+                        char.exhaustion = Math.max(0, char.exhaustion - 1);
+                        
+                        if (char.exhaustion === 0) {
+                            char.conditions = char.conditions.filter(c => c !== 'Erschöpfung');
+                        }
+                        
+                        addToHPHistory(char, `0`, `Lange Rast (Erschöpfung ${oldExhaustion} → ${char.exhaustion})`);
+                    }
+                    
+                    // Reset death saves
+                    if (char.hp.current > 0) {
+                        char.deathSaves = { successes: 0, failures: 0 };
+                        char.stable = false;
+                        char.conditions = char.conditions.filter(c => c !== 'Bewusstlos');
+                    }
+                });
+                
+                saveToLocalStorage();
+                renderCharacters();
+                alert('Alle Charaktere haben eine lange Rast gemacht!');
+            }
+        }
+
+        function damageCharacter(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            const input = document.getElementById(`damage-${characterId}`);
+            let value = parseInt(input.value) || 0;
+            
+            // Apply to temp HP first
+            if (character.hp.temp > 0) {
+                if (value <= character.hp.temp) {
+                    character.hp.temp -= value;
+                    addToHPHistory(character, `-${value}`, 'Schaden (von Temp-HP)');
+                    value = 0;
+                } else {
+                    value -= character.hp.temp;
+                    addToHPHistory(character, `-${character.hp.temp}`, 'Schaden (Temp-HP aufgebraucht)');
+                    character.hp.temp = 0;
+                }
+            }
+            
+            // Apply remaining damage to current HP
+            if (value > 0) {
+                character.hp.current = Math.max(0, character.hp.current - value);
+                addToHPHistory(character, `-${value}`, 'Schaden');
+                
+                // Add unconscious condition at 0 HP
+                if (character.hp.current === 0 && !character.conditions.includes('Bewusstlos')) {
+                    character.conditions.push('Bewusstlos');
+                }
+            }
+            
+            input.value = '';
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function setTempHP(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            const input = document.getElementById(`temphp-${characterId}`);
+            const value = parseInt(input.value) || 0;
+            
+            // Temp HP doesn't stack, take the higher value
+            const oldTemp = character.hp.temp;
+            character.hp.temp = Math.max(character.hp.temp, value);
+            
+            if (character.hp.temp > oldTemp) {
+                addToHPHistory(character, `+${character.hp.temp - oldTemp}`, 'Temp-HP hinzugefügt');
+            }
+            
+            input.value = '';
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function toggleHPHistory(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            character.showHPHistory = !character.showHPHistory;
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function undoHPChange(characterId, index) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character || !character.hpHistory[index]) return;
+
+            if (confirm('Diese HP-Änderung rückgängig machen?')) {
+                const entry = character.hpHistory[index];
+                const change = parseInt(entry.change);
+                
+                // Reverse the change
+                if (change > 0) {
+                    // Was healing, remove it
+                    character.hp.current = Math.max(0, character.hp.current - change);
+                } else {
+                    // Was damage, add it back
+                    character.hp.current = Math.min(character.hp.max, character.hp.current + Math.abs(change));
+                }
+                
+                // Remove this entry from history
+                character.hpHistory.splice(index, 1);
+                
+                addToHPHistory(character, -change, 'Rückgängig gemacht');
+                
+                saveToLocalStorage();
+                renderCharacters();
+            }
+        }
+
+        function setExhaustion(characterId, level) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            character.exhaustion = level;
+            
+            // Update condition
+            const hasExhaustion = character.conditions.includes('Erschöpfung');
+            if (level > 0 && !hasExhaustion) {
+                character.conditions.push('Erschöpfung');
+            } else if (level === 0 && hasExhaustion) {
+                character.conditions = character.conditions.filter(c => c !== 'Erschöpfung');
+            }
+            
+            // Enforce effective max HP (level 4+ halves max HP)
+            const effectiveMax = getEffectiveMaxHP(character);
+            if (character.hp.current > effectiveMax) {
+                const reduction = character.hp.current - effectiveMax;
+                character.hp.current = effectiveMax;
+                addToHPHistory(character, `-${reduction}`, `Erschöpfung Stufe ${level} (Max-HP halbiert)`);
+            }
+            
+            // Level 6 exhaustion = death
+            if (level >= 6) {
+                character.hp.current = 0;
+                character.deathSaves = { successes: 0, failures: 3 };
+                if (!character.conditions.includes('Bewusstlos')) {
+                    character.conditions.push('Bewusstlos');
+                }
+                alert(`💀 ERSCHÖPFUNG STUFE 6 - ${character.name} stirbt!`);
+            }
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function toggleDeathSave(characterId, type, index) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            if (type === 'success') {
+                character.deathSaves.successes = character.deathSaves.successes === index + 1 ? index : index + 1;
+                if (character.deathSaves.successes >= 3) {
+                    character.stable = true;
+                    alert(`✅ ${character.name} ist STABILISIERT (0 TP, bewusstlos, aber keine weiteren Rettungswürfe nötig)`);
+                }
+            } else {
+                character.deathSaves.failures = character.deathSaves.failures === index + 1 ? index : index + 1;
+                if (character.deathSaves.failures >= 3) {
+                    alert(`💀 ${character.name} IST TOT! 3 fehlgeschlagene Rettungswürfe.`);
+                }
+            }
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function stabilizeCharacter(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            character.stable = true;
+            character.deathSaves = { successes: 0, failures: 0 };
+            character.hp.current = 0;
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function resetDeathSaves(characterId) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            character.deathSaves = { successes: 0, failures: 0 };
+            character.stable = false;
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function setResistance(characterId, damageType, level) {
+            const character = characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            // Toggle off if clicking the same level again
+            if (character.resistances[damageType] === level) {
+                delete character.resistances[damageType];
+            } else if (level === 'none') {
+                delete character.resistances[damageType];
+            } else {
+                character.resistances[damageType] = level;
+            }
+            
+            saveToLocalStorage();
+            renderCharacters();
+        }
+
+        function uploadImage(characterId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const character = characters.find(c => c.id === characterId);
+                        if (character) {
+                            character.image = event.target.result;
+                            saveToLocalStorage();
+                            renderCharacters();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function exportData() {
+            const defaultName = `dnd-characters-${new Date().toISOString().split('T')[0]}`;
+            const fileName = prompt('Dateiname für Export:', defaultName);
+            
+            if (!fileName) return; // User cancelled
+            
+            const dataStr = JSON.stringify(characters, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function openImportModal() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = event.target.result;
+                            const imported = JSON.parse(data);
+                            
+                            if (Array.isArray(imported)) {
+                                characters = imported;
+                            } else if (imported.characters && Array.isArray(imported.characters)) {
+                                characters = imported.characters;
+                            } else {
+                                throw new Error('Ungültiges Format');
+                            }
+                            
+                            // Migration
+                            characters = characters.map(char => {
+                                if (!char.hp) char.hp = { current: 20, max: 20, temp: 0 };
+                                if (!char.exhaustion && char.exhaustion !== 0) char.exhaustion = 0;
+                                if (!char.deathSaves) char.deathSaves = { successes: 0, failures: 0 };
+                                if (!char.stable) char.stable = false;
+                                if (!char.conditions) char.conditions = [];
+                                if (!char.resistances) char.resistances = {};
+                                if (!char.showHealth) char.showHealth = false;
+                                if (!char.showResistances) char.showResistances = false;
+                                if (!char.image) char.image = null;
+                                if (!char.hpHistory) char.hpHistory = [];
+                                if (!char.showHPHistory) char.showHPHistory = false;
+                                return char;
+                            });
+                            
+                            saveToLocalStorage();
+                            renderCharacters();
+                            alert('Daten erfolgreich importiert!');
+                        } catch (error) {
+                            alert('Fehler beim Importieren: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function closeImportModal() {
+            // No longer needed but kept for compatibility
+        }
+
+        function importData() {
+            // No longer needed but kept for compatibility
+        }
+
+        function renderCharacters() {
+            const container = document.getElementById('charactersContainer');
+            
+            if (characters.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎲</div>
+                        <h3>Noch keine Charaktere</h3>
+                        <p>Füge deinen ersten Charakter hinzu, um zu beginnen!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = characters.map(character => {
+                // Determine card status
+                let cardClass = 'character-card';
+                if (character.hp.current === 0 && character.deathSaves.failures >= 3) {
+                    cardClass += ' dead';
+                } else if (character.hp.current === 0) {
+                    cardClass += ' dying';
+                }
+
+                let conditionDescriptions = '';
+                if (character.conditions.length > 0) {
+                    conditionDescriptions = character.conditions.map(condName => {
+                        const cond = conditions.find(c => c.name === condName);
+                        
+                        // Special handling for Erschöpfung - show all active levels stacked
+                        if (condName === 'Erschöpfung' && character.exhaustion > 0) {
+                            const exhaustionLevels = [
+                                '',
+                                'Stufe 1: Nachteil auf Attributswürfe',
+                                'Stufe 2: Bewegungsrate halbiert',
+                                'Stufe 3: Nachteil auf Angriffs- und Rettungswürfe',
+                                'Stufe 4: TP-Maximum halbiert',
+                                'Stufe 5: Bewegungsrate = 0',
+                                'Stufe 6: Tod'
+                            ];
+                            
+                            let exhaustionDesc = '<strong>Aktive Effekte:</strong>\n';
+                            for (let i = 1; i <= character.exhaustion; i++) {
+                                exhaustionDesc += `• ${exhaustionLevels[i]}\n`;
+                            }
+                            exhaustionDesc += '\n<strong>Reduzieren:</strong>\n• Lange Rast: -1 Stufe (min. Nahrung & Wasser erforderlich)\n• Greater Restoration: -1 Stufe sofort';
+                            
+                            return `
+                                <div style="margin-bottom: 15px;">
+                                    <h4>📋 ${condName} (Stufe ${character.exhaustion})</h4>
+                                    <p>${exhaustionDesc}</p>
+                                </div>
+                            `;
+                        }
+                        
+                        return `
+                            <div style="margin-bottom: 15px;">
+                                <h4>📋 ${condName}</h4>
+                                <p>${cond ? cond.desc : ''}</p>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    conditionDescriptions = '<div class="no-conditions-selected">Keine aktiven Zustände</div>';
+                }
+
+                // Check if character has concentration and show warning
+                const hasConcentration = character.conditions.includes('Konzentration');
+                const showConcentrationWarning = hasConcentration && character.hpHistory && character.hpHistory.length > 0 && character.hpHistory[0].change.startsWith('-');
+                
+                let concentrationWarning = '';
+                if (showConcentrationWarning) {
+                    const lastDamage = Math.abs(parseInt(character.hpHistory[0].change));
+                    const dc = Math.max(10, Math.floor(lastDamage / 2));
+                    concentrationWarning = `
+                        <div class="concentration-warning">
+                            <span class="concentration-warning-icon">⚠️</span>
+                            <span><strong>Konzentrations-Rettungswurf erforderlich!</strong><br>
+                            KON-Rettungswurf SG ${dc} (10 oder ${Math.floor(lastDamage / 2)}, je höher)</span>
+                        </div>
+                    `;
+                }
+
+                // Generate resistance info
+                let resistanceInfo = '';
+                const activeResistances = Object.entries(character.resistances || {});
+                if (activeResistances.length > 0) {
+                    const resList = activeResistances.map(([type, level]) => {
+                        const icon = level === 'immunity' ? '🛡️' : '🔰';
+                        const text = level === 'immunity' ? 'Immun' : 'Resistent';
+                        return `• ${icon} ${type} (${text})`;
+                    }).join('\n');
+                    resistanceInfo = `
+                        <div style="margin-bottom: 15px;">
+                            <h4>🛡️ Resistenzen & Immunitäten</h4>
+                            <p style="white-space: pre-line;">${resList}</p>
+                        </div>
+                    `;
+                }
+
+                // Exhaustion display (only active levels)
+                let exhaustionDisplay = '';
+                if (character.exhaustion > 0) {
+                    const descriptions = [
+                        '',
+                        'Stufe 1: Nachteil auf Attributswürfe',
+                        'Stufe 2: Bewegungsrate halbiert',
+                        'Stufe 3: Nachteil auf Angriffe & Rettungswürfe',
+                        'Stufe 4: TP-Maximum halbiert',
+                        'Stufe 5: Bewegungsrate = 0',
+                        'Stufe 6: TOD'
+                    ];
+                    
+                    exhaustionDisplay = '<div class="exhaustion-info">';
+                    for (let i = 1; i <= character.exhaustion; i++) {
+                        exhaustionDisplay += `<div>• ${descriptions[i]}</div>`;
+                    }
+                    exhaustionDisplay += '</div>';
+                }
+
+                return `
+                    <div class="${cardClass}">
+                        <div class="character-header">
+                            <div class="character-image-container" onclick="uploadImage(${character.id})">
+                                ${character.image 
+                                    ? `<img src="${character.image}" alt="${character.name}" />`
+                                    : `<span style="font-size: 30px;">👤</span>`
+                                }
+                            </div>
+                            <div class="character-info">
+                                <div class="character-name">${character.name}</div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteCharacter(${character.id})">Löschen</button>
+                        </div>
+                        
+                        <div class="conditions-list">
+                            ${character.conditions.length === 0 
+                                ? '<span style="color: #6c757d; font-style: italic;">Keine aktiven Zustände</span>'
+                                : character.conditions.map(condName => `
+                                    <div class="condition-badge" onclick="toggleCondition(${character.id}, '${condName}')">
+                                        ${condName}
+                                        <span class="remove-badge">×</span>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+
+                        <div class="resistances-list">
+                            ${activeResistances.map(([type, level]) => `
+                                <div class="resistance-badge ${level === 'immunity' ? 'immunity' : ''}" 
+                                     onclick="setResistance(${character.id}, '${type}', 'none')">
+                                    ${type} ${level === 'immunity' ? '(Immun)' : '(Res.)'}
+                                    <span class="remove-badge">×</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <button class="toggle-section-btn ${character.showHealth ? 'active' : ''}" 
+                                onclick="toggleHealthSection(${character.id})">
+                            ${character.showHealth ? '▼' : '▶'} Gesundheit & Erschöpfung
+                        </button>
+
+                        <div class="section-content ${character.showHealth ? 'visible' : ''}">
+                            ${concentrationWarning}
+                            
+                            <div class="health-tracker">
+                                <h4 style="color: #27ae60; margin-bottom: 10px;">❤️ Trefferpunkte</h4>
+                                
+                                <div class="health-row">
+                                    <span class="health-label">Max TP:</span>
+                                    <input type="number" id="maxhp-${character.id}" class="health-input" value="${character.hp.max}" min="0" />
+                                    <button class="health-btn set" onclick="setMaxHP(${character.id})">Setzen</button>
+                                </div>
+
+                                <div class="health-row">
+                                    <span class="health-label">Aktuelle TP:</span>
+                                    <span class="health-display ${
+                                        character.hp.current === 0 ? 'dead' :
+                                        character.hp.current <= getEffectiveMaxHP(character) * 0.25 ? 'danger' :
+                                        character.hp.current <= getEffectiveMaxHP(character) * 0.5 ? 'warning' : ''
+                                    }">${character.hp.current} / ${getEffectiveMaxHP(character)}${character.exhaustion >= 4 ? ` (von ${character.hp.max})` : ''}</span>
+                                </div>
+
+                                <div class="health-row">
+                                    <input type="number" id="heal-${character.id}" class="health-input" placeholder="Heilung" min="0" />
+                                    <button class="health-btn heal" onclick="healCharacter(${character.id})">Heilen</button>
+                                    <input type="number" id="damage-${character.id}" class="health-input" placeholder="Schaden" min="0" />
+                                    <button class="health-btn damage" onclick="damageCharacter(${character.id})">Schaden</button>
+                                </div>
+
+                                ${character.hp.temp > 0 ? `
+                                    <div class="temp-hp">
+                                        <strong>Temporäre TP:</strong> ${character.hp.temp}
+                                    </div>
+                                ` : ''}
+
+                                <div class="health-row" style="margin-top: 10px;">
+                                    <input type="number" id="temphp-${character.id}" class="health-input" placeholder="Temp TP" min="0" />
+                                    <button class="health-btn set" onclick="setTempHP(${character.id})">Temp TP</button>
+                                    <button class="hp-history-btn" onclick="toggleHPHistory(${character.id})">
+                                        ${character.showHPHistory ? '▼' : '▶'} Verlauf
+                                    </button>
+                                </div>
+
+                                ${character.showHPHistory && character.hpHistory.length > 0 ? `
+                                    <div class="hp-history">
+                                        ${character.hpHistory.map((entry, index) => `
+                                            <div class="hp-history-entry">
+                                                <span>${entry.timestamp}: ${entry.change} (${entry.reason}) → ${entry.currentHP}/${entry.maxHP} TP</span>
+                                                <button class="hp-history-undo" onclick="undoHPChange(${character.id}, ${index})">↶</button>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div class="rest-buttons">
+                                <button class="rest-btn" onclick="shortRest(${character.id})">☕ Kurze Rast</button>
+                                <button class="rest-btn long-rest" onclick="longRest(${character.id})">🛏️ Lange Rast</button>
+                            </div>
+
+                            <div class="exhaustion-tracker">
+                                <h4 style="color: #f39c12; margin-bottom: 10px;">⚠️ Erschöpfung (Stufe ${character.exhaustion})</h4>
+                                <div class="exhaustion-levels">
+                                    ${[0, 1, 2, 3, 4, 5, 6].map(level => `
+                                        <div class="exhaustion-level ${character.exhaustion === level ? 'active' : ''} ${level === 6 ? 'death' : ''}" 
+                                             onclick="setExhaustion(${character.id}, ${level})">
+                                            ${level}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                ${exhaustionDisplay}
+                            </div>
+
+                            ${character.hp.current === 0 && !character.stable ? `
+                                <div class="death-saves">
+                                    <h4>💀 Rettungswürfe gegen den Tod</h4>
+                                    <p>Bei 0 TP am Ende jedes Zuges: W20 würfeln. 10+: Erfolg, 1-9: Fehlschlag. 
+                                    Nat. 20: 1 TP zurück. Nat. 1: 2 Fehlschläge. 3 Erfolge: Stabilisiert. 3 Fehlschläge: Tod.</p>
+                                    <div class="saves-row">
+                                        <div class="saves-group">
+                                            <label>✅ Erfolge</label>
+                                            <div class="save-boxes">
+                                                ${[0, 1, 2].map(i => `
+                                                    <div class="save-box ${i < character.deathSaves.successes ? 'success' : ''}"
+                                                         onclick="toggleDeathSave(${character.id}, 'success', ${i})">
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                        <div class="saves-group">
+                                            <label>❌ Fehlschläge</label>
+                                            <div class="save-boxes">
+                                                ${[0, 1, 2].map(i => `
+                                                    <div class="save-box ${i < character.deathSaves.failures ? 'failure' : ''}"
+                                                         onclick="toggleDeathSave(${character.id}, 'failure', ${i})">
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="death-saves-buttons">
+                                        <button class="stabilize-btn" onclick="stabilizeCharacter(${character.id})">Stabilisieren</button>
+                                        <button class="reset-saves-btn" onclick="resetDeathSaves(${character.id})">Zurücksetzen</button>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${character.stable ? `
+                                <div class="death-saves" style="background: #d4edda; border-color: #28a745;">
+                                    <h4 style="color: #155724;">✅ Stabilisiert bei 0 TP</h4>
+                                    <p style="color: #155724;">Der Charakter ist bewusstlos aber stabil. Heilung bringt ihn zurück.</p>
+                                    <button class="reset-saves-btn" onclick="resetDeathSaves(${character.id})">Status zurücksetzen</button>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <button class="toggle-section-btn ${character.showResistances ? 'active' : ''}" 
+                                onclick="toggleResistancesSection(${character.id})">
+                            ${character.showResistances ? '▼' : '▶'} Resistenzen & Immunitäten
+                        </button>
+
+                        <div class="section-content ${character.showResistances ? 'visible' : ''}">
+                            <div class="resistance-selector">
+                                ${damageTypes.map(type => {
+                                    const current = character.resistances[type] || 'none';
+                                    return `
+                                        <div class="resistance-item">
+                                            <span class="resistance-name">${type}</span>
+                                            <div class="resistance-toggle">
+                                                <button class="${current === 'resistance' ? 'selected' : ''}" 
+                                                        onclick="setResistance(${character.id}, '${type}', 'resistance')">
+                                                    Resistent
+                                                </button>
+                                                <button class="${current === 'immunity' ? 'selected immunity' : ''}" 
+                                                        onclick="setResistance(${character.id}, '${type}', 'immunity')">
+                                                    Immun
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="condition-buttons">
+                            <h4>Zustände:</h4>
+                            <div class="buttons-grid">
+                                ${conditions.map(cond => {
+                                    const isActive = character.conditions.includes(cond.name);
+                                    return `
+                                        <button class="condition-btn ${isActive ? 'active' : ''}" 
+                                                onclick="toggleCondition(${character.id}, '${cond.name}')">
+                                            ${cond.name}
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="condition-description">
+                            <h4 style="margin-bottom: 15px; color: #667eea; font-size: 16px;">
+                                🛡️ Aktive Effekte:
+                            </h4>
+                            ${resistanceInfo}
+                            ${conditionDescriptions}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Enter-Taste im Input-Feld
+        document.getElementById('characterName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addCharacter();
+            }
+        });
+
+        // Initial render
+        renderCharacters();
+    </script>
+</body>
+</html>
